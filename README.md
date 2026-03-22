@@ -63,7 +63,7 @@ K-Means clustering (k=3, silhouette=0.456) across five sustainability dimensions
 - All four companies converged to a **2/5 sustainability score** by 2024 regardless of starting position
 - This convergence is systemic — not company-specific
 
-![ML Clustering](images/chart_clustering.png)
+![ML Clustering](images/chart_pca_clusters.png)
 
 ### Act III — The Decision Point
 

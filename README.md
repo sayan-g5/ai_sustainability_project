@@ -17,7 +17,7 @@
 
 ## Live Dashboard
 
-**[→ Open the AI Inference Emissions Calculator](https://YOUR-USERNAME.github.io/ai_sustainability_project/dashboard/AI_Inference_Calculator.html)**
+**[→ Open the AI Inference Emissions Calculator](https://sayan-g5.github.io/ai_sustainability_project/dashboards/AI_Inference_Calculator.html)**
 
 Calculate the real energy, carbon, water, and financial footprint of running any AI model at scale.
 Covers 16 models across 8 global grid regions — updated with 2025 data.

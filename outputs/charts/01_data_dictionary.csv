@@ -1,0 +1,20 @@
+DataFrame,Source,Description,Rows,Columns,Missing Cells,Missing %
+dc_global,"File 1, Sheet 1",Global DC energy by region 2015–2030,18,10,20,11.1%
+dc_by_type,"File 1, Sheet 2",DC energy by equipment type,13,9,17,14.5%
+pue_wue,"File 1, Sheet 3",PUE/WUE efficiency 2007–2024,20,9,83,46.1%
+dc_carbon,"File 1, Sheet 4",Carbon emissions by region,15,8,26,21.7%
+ai_market,"File 1, Sheet 5",AI market size & investment,16,9,18,12.5%
+ai_adoption,"File 1, Sheet 6",AI adoption & compute demand,15,8,21,17.5%
+cloud_infra,"File 1, Sheet 7",Cloud infrastructure spending,16,10,34,21.2%
+hyperscale_f1,"File 1, Sheet 8",Hyperscale DC count & capacity,18,9,35,21.6%
+dc_investment,"File 1, Sheet 9",DC investment by region,13,8,16,15.4%
+projections_f1,"File 1, Sheet 10",Forward projections 2025–2035,13,9,17,14.5%
+ai_models,"File 2, Sheet 1",AI model training energy & compute,25,12,99,33.0%
+core_ts,"File 2, Sheet 2",Core ML feature time series,17,13,43,19.5%
+hyperscalers,"File 2, Sheet 3",Hyperscaler sustainability per company,26,14,67,18.4%
+ai_kpis,"File 2, Sheet 4",AI boom KPIs,11,11,30,24.8%
+dc_sust,"File 2, Sheet 5",DC sustainability metrics,12,11,34,25.8%
+inference,"File 2, Sheet 6",Inference energy at scale,15,11,28,17.0%
+grid_carbon,"File 2, Sheet 7",Regional grid carbon intensity,22,11,21,8.7%
+capex_gap,"File 2, Sheet 8",Capex vs sustainability gap,24,1,1,4.2%
+scenarios,"File 2, Sheet 9",Forward scenarios 2025–2035,13,13,25,14.8%

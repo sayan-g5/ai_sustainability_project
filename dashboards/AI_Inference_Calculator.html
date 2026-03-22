@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Carbon Calculator — The True Cost of AI Inference</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:        #F7F4EF;
+    --surface:   #FFFFFF;
+    --border:    #E2DDD6;
+    --navy:      #1A2B3C;
+    --blue:      #1D4ED8;
+    --cyan:      #0891B2;
+    --green:     #15803D;
+    --amber:     #D97706;
+    --red:       #DC2626;
+    --slate:     #64748B;
+    --text:      #1A2B3C;
+    --muted:     #94A3B8;
+    --green-bg:  #F0FDF4;
+    --amber-bg:  #FFFBEB;
+    --red-bg:    #FEF2F2;
+    --blue-bg:   #EFF6FF;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────────────────── */
+  .masthead {
+    background: var(--navy);
+    padding: 40px 60px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  .masthead::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(8,145,178,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .masthead-inner { max-width: 1200px; margin: 0 auto; }
+  .masthead-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 3px;
+    color: var(--cyan); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .masthead h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 4vw, 46px);
+    color: #FFFFFF; line-height: 1.15;
+    max-width: 700px;
+  }
+  .masthead h1 em { color: var(--cyan); font-style: italic; }
+  .masthead-sub {
+    margin-top: 14px;
+    font-size: 15px; color: #94A3B8;
+    max-width: 600px; line-height: 1.6;
+  }
+  .masthead-sources {
+    margin-top: 18px;
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .source-pill {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px; color: #94A3B8;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── LAYOUT ─────────────────────────────────────────────────────────────── */
+  .main { max-width: 1200px; margin: 0 auto; padding: 40px 40px 80px; }
+
+  /* ── CALCULATOR PANEL ───────────────────────────────────────────────────── */
+  .calc-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 2px 12px rgba(26,43,60,0.06);
+  }
+
+  .panel-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--slate); text-transform: uppercase;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── FORM CONTROLS ──────────────────────────────────────────────────────── */
+  .form-group { margin-bottom: 20px; }
+  .form-group label {
+    display: block;
+    font-size: 12px; font-weight: 600;
+    color: var(--slate); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 8px;
+  }
+
+  select, input[type="number"], input[type="range"] {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  select {
+    appearance: none;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 16px;
+    font-size: 14px; color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748B' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+  select:focus { outline: none; border-color: var(--cyan); }
+
+  .number-input-wrap { position: relative; }
+  .number-input-wrap input[type="number"] {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 60px 11px 16px;
+    font-size: 14px; color: var(--text);
+    transition: border-color 0.2s;
+  }
+  .number-input-wrap input[type="number"]:focus { outline: none; border-color: var(--cyan); }
+  .number-input-wrap .unit {
+    position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px; color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    pointer-events: none;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    background: var(--navy);
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+  .range-labels {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 6px;
+  }
+
+  /* model badge */
+  .model-badge {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: var(--blue-bg);
+    border: 1px solid #BFDBFE;
+  }
+  .model-badge .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .model-badge .model-info { flex: 1; }
+  .model-badge .model-name { font-size: 13px; font-weight: 600; }
+  .model-badge .model-meta { font-size: 11px; color: var(--slate); margin-top: 1px; }
+  .model-badge .efficiency-tag {
+    font-size: 10px; font-family: 'DM Mono', monospace;
+    padding: 3px 8px; border-radius: 6px;
+    font-weight: 500;
+  }
+
+  /* location selector */
+  .location-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; margin-top: 8px;
+  }
+  .loc-btn {
+    padding: 9px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s;
+    position: relative;
+  }
+  .loc-btn:hover { border-color: var(--cyan); }
+  .loc-btn.active { border-color: var(--navy); background: var(--navy); }
+  .loc-btn .loc-name { font-size: 12px; font-weight: 600; display: block; }
+  .loc-btn .loc-intensity { font-size: 10px; font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .loc-btn.active .loc-name,
+  .loc-btn.active .loc-intensity { color: white; }
+  .loc-btn .loc-bar {
+    height: 3px; border-radius: 2px; margin-top: 6px;
+  }
+  .loc-btn.active .loc-bar { background: rgba(255,255,255,0.3); }
+
+  /* ── RESULTS ────────────────────────────────────────────────────────────── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .metric-card {
+    border-radius: 14px;
+    padding: 20px 18px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .metric-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,43,60,0.10); }
+
+  .metric-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+  }
+  .metric-card.energy::before  { background: var(--blue); }
+  .metric-card.carbon::before  { background: var(--red); }
+  .metric-card.water::before   { background: var(--cyan); }
+  .metric-card.cost::before    { background: var(--green); }
+  .metric-card.homes::before   { background: var(--amber); }
+  .metric-card.annual::before  { background: var(--slate); }
+
+  .metric-icon { font-size: 22px; margin-bottom: 8px; }
+  .metric-label {
+    font-size: 10px; font-weight: 600;
+    color: var(--slate); text-transform: uppercase;
+    letter-spacing: 0.8px; margin-bottom: 6px;
+  }
+  .metric-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px; line-height: 1;
+    color: var(--text);
+  }
+  .metric-unit {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--slate);
+    margin-top: 4px;
+  }
+  .metric-context {
+    font-size: 11px; color: var(--muted);
+    margin-top: 8px; line-height: 1.4;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── SCALE SECTION ──────────────────────────────────────────────────────── */
+  .scale-section {
+    margin-top: 20px;
+  }
+  .scale-section .section-head {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 3px; color: var(--slate);
+    text-transform: uppercase; margin-bottom: 14px;
+  }
+  .scale-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .scale-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 12px;
+    text-align: center;
+  }
+  .scale-emoji { font-size: 24px; margin-bottom: 6px; }
+  .scale-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px; color: var(--text); line-height: 1;
+  }
+  .scale-label { font-size: 10px; color: var(--slate); margin-top: 4px; line-height: 1.3; }
+
+  /* ── COMPARISON ─────────────────────────────────────────────────────────── */
+  .comparison-section { margin-top: 20px; }
+  .comparison-bar-wrap { margin-bottom: 10px; }
+  .comparison-bar-label {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 5px;
+  }
+  .comparison-bar-label .clabel { font-size: 12px; font-weight: 500; }
+  .comparison-bar-label .cval {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--slate);
+  }
+  .bar-track {
+    height: 8px; background: var(--border);
+    border-radius: 4px; overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ── MODEL COMPARISON TABLE ─────────────────────────────────────────────── */
+  .model-table-wrap { overflow-x: auto; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: var(--navy); color: white;
+    padding: 10px 12px; text-align: left;
+    font-size: 10px; letter-spacing: 0.5px;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+  }
+  th:first-child { border-radius: 8px 0 0 0; }
+  th:last-child  { border-radius: 0 8px 0 0; }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:nth-child(even) td { background: var(--bg); }
+  tr.highlighted td { background: #EFF6FF; }
+  tr.highlighted td:first-child { border-left: 3px solid var(--blue); }
+  .eff-bar {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .eff-bar-track {
+    flex: 1; height: 5px; background: var(--border);
+    border-radius: 3px; overflow: hidden;
+  }
+  .eff-bar-fill { height: 100%; border-radius: 3px; }
+  .badge {
+    padding: 2px 7px; border-radius: 5px;
+    font-size: 10px; font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  /* ── LOCATION IMPACT ────────────────────────────────────────────────────── */
+  .location-impact-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-top: 14px;
+  }
+  .loc-impact-card {
+    border-radius: 12px; padding: 14px;
+    border: 1px solid var(--border);
+  }
+  .loc-impact-card .li-region { font-size: 12px; font-weight: 600; }
+  .loc-impact-card .li-intensity {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: var(--slate); margin-top: 2px;
+  }
+  .loc-impact-card .li-saving {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px; margin-top: 8px;
+  }
+  .loc-impact-card .li-desc { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── INSIGHT BOX ────────────────────────────────────────────────────────── */
+  .insight-box {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--navy);
+    border-radius: 14px; padding: 20px;
+    margin-top: 20px;
+  }
+  .insight-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  .insight-text h4 {
+    font-size: 13px; font-weight: 600; color: #E2E8F0;
+    margin-bottom: 6px;
+  }
+  .insight-text p { font-size: 12px; color: #94A3B8; line-height: 1.6; }
+  .insight-text strong { color: #E2E8F0; }
+
+  /* ── FULL WIDTH SECTIONS ────────────────────────────────────────────────── */
+  .full-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px;
+    margin-top: 28px;
+    box-shadow: 0 2px 12px rgba(26,43,60,0.06);
+  }
+  .full-section .section-head {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 3px; color: var(--slate);
+    text-transform: uppercase; margin-bottom: 20px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--border);
+  }
+
+  /* ── DISCLOSURE TRACKER ─────────────────────────────────────────────────── */
+  .disclosure-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  .disclosure-card {
+    border-radius: 12px; padding: 16px;
+    border: 1px solid var(--border);
+  }
+  .dc-company { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  .dc-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px; font-size: 11px;
+  }
+  .dc-row .dc-label { color: var(--slate); }
+  .dc-status {
+    font-size: 10px; font-family: 'DM Mono', monospace;
+    padding: 2px 7px; border-radius: 5px;
+  }
+  .dc-yes  { background: #D1FAE5; color: #065F46; }
+  .dc-no   { background: #FEE2E2; color: #991B1B; }
+  .dc-part { background: #FEF3C7; color: #92400E; }
+
+  /* ── RECOMMENDATIONS ────────────────────────────────────────────────────── */
+  .reco-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .reco-card {
+    border-radius: 12px; padding: 16px;
+    border: 1px solid var(--border);
+    border-top: 3px solid;
+  }
+  .reco-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: var(--muted); margin-bottom: 6px;
+  }
+  .reco-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .reco-desc { font-size: 11px; color: var(--slate); line-height: 1.5; }
+  .reco-impact {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 11px; font-weight: 600;
+  }
+
+  /* ── TABS ───────────────────────────────────────────────────────────────── */
+  .tab-bar {
+    display: flex; gap: 6px; margin-bottom: 20px;
+    background: var(--bg);
+    padding: 5px; border-radius: 12px;
+    width: fit-content;
+  }
+  .tab-btn {
+    padding: 8px 16px; border-radius: 9px;
+    border: none; background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500;
+    color: var(--slate); cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── FOOTER NOTE ────────────────────────────────────────────────────────── */
+  .footnote {
+    font-size: 11px; color: var(--muted);
+    text-align: center; margin-top: 40px;
+    padding-top: 20px; border-top: 1px solid var(--border);
+    line-height: 1.7;
+  }
+
+  /* animations */
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(12px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .metric-value { animation: fadeUp 0.4s ease both; }
+
+  @media (max-width: 900px) {
+    .calc-grid { grid-template-columns: 1fr; }
+    .results-grid { grid-template-columns: repeat(2,1fr); }
+    .scale-grid { grid-template-columns: repeat(2,1fr); }
+    .disclosure-grid { grid-template-columns: repeat(2,1fr); }
+    .reco-grid { grid-template-columns: 1fr; }
+    .location-impact-grid { grid-template-columns: repeat(2,1fr); }
+    .main { padding: 24px 20px 60px; }
+    .masthead { padding: 28px 20px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="masthead-inner">
+    <div class="masthead-tag">AI Infrastructure &amp; Sustainability · Live Calculator</div>
+    <h1>The True Cost of<br><em>AI Inference</em> at Scale</h1>
+    <p class="masthead-sub">Calculate the real energy, carbon, water, and financial footprint of running AI models. Updated with 2025 data from IEA, Epoch AI, Google, arXiv, and MIT Technology Review.</p>
+    <div class="masthead-sources">
+      <span class="source-pill">Epoch AI 2025</span>
+      <span class="source-pill">arXiv 2505.09598</span>
+      <span class="source-pill">Google Cloud Blog Aug 2025</span>
+      <span class="source-pill">IEA Energy & AI 2025</span>
+      <span class="source-pill">MIT Tech Review May 2025</span>
+      <span class="source-pill">LBNL 2024</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ═══ CALCULATOR + RESULTS ═══════════════════════════════════════════════ -->
+  <div class="calc-grid">
+
+    <!-- LEFT: INPUTS -->
+    <div class="panel">
+      <div class="panel-title">Configure Your Query</div>
+
+      <!-- Model selector -->
+      <div class="form-group">
+        <label>AI Model</label>
+        <select id="model-select" onchange="update()">
+          <optgroup label="🧠 Reasoning Models (Most Intensive)">
+            <option value="deepseek-r1">DeepSeek-R1 (671B)</option>
+            <option value="o3">o3 OpenAI (Reasoning)</option>
+            <option value="o1">o1 OpenAI (Reasoning)</option>
+          </optgroup>
+          <optgroup label="⚡ Frontier Models">
+            <option value="gpt4o" selected>GPT-4o (OpenAI)</option>
+            <option value="claude-opus">Claude 3 Opus (Anthropic)</option>
+            <option value="gemini-pro">Gemini Pro / 1.5 (Google)</option>
+            <option value="gpt4">GPT-4 Turbo (OpenAI)</option>
+            <option value="llama-405b">Llama 3.1 405B (Meta)</option>
+          </optgroup>
+          <optgroup label="✅ Efficient Models">
+            <option value="gemini-flash">Gemini Flash (Google)</option>
+            <option value="gpt4o-mini">GPT-4o mini (OpenAI)</option>
+            <option value="claude-sonnet">Claude 3.5 Sonnet (Anthropic)</option>
+            <option value="claude-haiku">Claude Haiku (Anthropic)</option>
+            <option value="llama-8b">Llama 3.1 8B (Meta)</option>
+            <option value="mistral">Mistral Large</option>
+          </optgroup>
+          <optgroup label="🔍 Baseline Comparison">
+            <option value="google-search">Google Search (baseline)</option>
+            <option value="image-gen">Image Generation (avg)</option>
+            <option value="video-gen">Video Generation (short)</option>
+          </optgroup>
+        </select>
+        <div class="model-badge" id="model-badge"></div>
+      </div>
+
+      <!-- Queries per day -->
+      <div class="form-group">
+        <label>Daily Query Volume</label>
+        <input type="range" id="queries-range" min="1" max="8" value="4" oninput="syncSlider(this)" onchange="update()">
+        <div class="range-labels">
+          <span>1M</span><span>10M</span><span>100M</span><span>500M</span><span>1B</span><span>5B</span><span>10B</span><span>50B</span>
+        </div>
+        <div class="number-input-wrap" style="margin-top:10px">
+          <input type="number" id="queries-input" value="100" min="0.1" step="1" oninput="update()" placeholder="100">
+          <span class="unit">M/day</span>
+        </div>
+      </div>
+
+      <!-- Query type -->
+      <div class="form-group">
+        <label>Query Type / Complexity</label>
+        <select id="query-type" onchange="update()">
+          <option value="0.4">Short text prompt (tweet-length)</option>
+          <option value="1.0" selected>Standard chat query (avg)</option>
+          <option value="2.2">Long detailed query (research)</option>
+          <option value="5.0">Extended reasoning chain</option>
+          <option value="0.8">Code completion (short)</option>
+          <option value="3.5">Code generation (function)</option>
+        </select>
+      </div>
+
+      <!-- Location -->
+      <div class="form-group">
+        <label>Data Center Location</label>
+        <div class="location-grid" id="location-grid"></div>
+      </div>
+
+      <!-- Electricity cost -->
+      <div class="form-group">
+        <label>Electricity Cost (for financial calc)</label>
+        <div class="number-input-wrap">
+          <input type="number" id="elec-cost" value="0.08" min="0.01" step="0.01" oninput="update()">
+          <span class="unit">$/kWh</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: RESULTS -->
+    <div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="showTab('overview',this)">Overview</button>
+        <button class="tab-btn" onclick="showTab('scale',this)">At Scale</button>
+        <button class="tab-btn" onclick="showTab('location',this)">Location Arbitrage</button>
+        <button class="tab-btn" onclick="showTab('compare',this)">Model Compare</button>
+      </div>
+
+      <!-- TAB: Overview -->
+      <div class="tab-content active" id="tab-overview">
+        <div class="panel" style="padding:22px">
+          <div class="panel-title">Per Query &amp; Annual Impact</div>
+          <div class="results-grid" id="metrics-grid"></div>
+          <div id="insight-box-wrap"></div>
+        </div>
+      </div>
+
+      <!-- TAB: At Scale -->
+      <div class="tab-content" id="tab-scale">
+        <div class="panel" style="padding:22px">
+          <div class="panel-title">Operational Footprint at Your Query Volume</div>
+          <div class="scale-grid" id="scale-grid"></div>
+          <div class="comparison-section" style="margin-top:20px">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--slate);text-transform:uppercase;margin-bottom:14px">Annual Energy vs Familiar References</div>
+            <div id="comparison-bars"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Location Arbitrage -->
+      <div class="tab-content" id="tab-location">
+        <div class="panel" style="padding:22px">
+          <div class="panel-title">Carbon Saving by Running in Different Locations</div>
+          <p style="font-size:13px;color:var(--slate);margin-bottom:16px;line-height:1.6">
+            Same model, same queries — different grid. The carbon intensity of where your AI runs matters more than almost any other sustainability decision.
+          </p>
+          <div class="location-impact-grid" id="location-impact-grid"></div>
+          <div id="location-insight"></div>
+        </div>
+      </div>
+
+      <!-- TAB: Model Compare -->
+      <div class="tab-content" id="tab-compare">
+        <div class="panel" style="padding:22px">
+          <div class="panel-title">All Models at Your Query Volume</div>
+          <div class="model-table-wrap">
+            <table id="model-table"></table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ FULL WIDTH: CORPORATE DISCLOSURE TRACKER ═══════════════════════════ -->
+  <div class="full-section">
+    <div class="section-head">Corporate Sustainability Disclosure Tracker — 2025</div>
+    <p style="font-size:13px;color:var(--slate);margin-bottom:20px;line-height:1.6;max-width:800px">
+      How transparent are the major AI companies about their environmental footprint? 
+      <strong>68% of frontier AI models have no disclosed training energy.</strong> Inference disclosure is even rarer.
+    </p>
+    <div class="disclosure-grid" id="disclosure-grid"></div>
+  </div>
+
+  <!-- ═══ FULL WIDTH: INDUSTRY PROJECTIONS ════════════════════════════════════ -->
+  <div class="full-section">
+    <div class="section-head">Industry Inference Energy Projections to 2030</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px" id="projection-cards"></div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--slate);text-transform:uppercase;margin-bottom:14px">
+      All AI Inference Energy — Global Annual Total
+    </div>
+    <div id="projection-bars"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6">
+      Source: IEA Energy &amp; AI 2025 (AI-specific servers 53–76 TWh in 2024); Schneider Electric (15 TWh GenAI 2025, 347 TWh by 2030); 
+      IEEE Spectrum; LBNL 2024. Inference estimated at 80–90% of AI compute energy.
+    </div>
+  </div>
+
+  <!-- ═══ FULL WIDTH: RECOMMENDATIONS ═════════════════════════════════════════ -->
+  <div class="full-section">
+    <div class="section-head">What Can Be Done — Five Recommendations</div>
+    <div class="reco-grid" id="reco-grid"></div>
+  </div>
+
+  <div class="footnote">
+    All figures are estimates based on published research and disclosed data. Energy per query varies by prompt length, model version, hardware generation, and deployment configuration.<br>
+    Sources: Epoch AI (2025) · arXiv 2505.09598 · Google Cloud Blog (Aug 2025) · MIT Technology Review (May 2025) · IEA Energy &amp; AI Report 2025 · LBNL 2024 · Schneider Electric · Devera AI 2025
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// DATA — Updated with latest 2025 research
+// ═══════════════════════════════════════════════════════════════════════════
+const MODELS = {
+  'deepseek-r1':  { name:'DeepSeek-R1',      co:'DeepSeek',   params:'671B (37B active)',  wh:33.0,  water_ml:14.0, type:'reasoning', color:'#DC2626', eff:'critical', source:'arXiv 2505.09598' },
+  'o3':           { name:'o3',               co:'OpenAI',     params:'Undisclosed',        wh:33.0,  water_ml:14.0, type:'reasoning', color:'#DC2626', eff:'critical', source:'Epoch AI 2025' },
+  'o1':           { name:'o1',               co:'OpenAI',     params:'Undisclosed',        wh:8.5,   water_ml:3.6,  type:'reasoning', color:'#F97316', eff:'high',     source:'Epoch AI 2025' },
+  'gpt4o':        { name:'GPT-4o',           co:'OpenAI',     params:'~200B (MoE est.)',   wh:0.43,  water_ml:0.18, type:'frontier',  color:'#1D4ED8', eff:'moderate', source:'arXiv 2505.09598 / Epoch AI' },
+  'claude-opus':  { name:'Claude 3 Opus',    co:'Anthropic',  params:'Undisclosed',        wh:4.05,  water_ml:1.70, type:'frontier',  color:'#7C3AED', eff:'high',     source:'Devera AI 2025' },
+  'gemini-pro':   { name:'Gemini Pro/1.5',   co:'Google',     params:'Undisclosed (MoE)',  wh:0.60,  water_ml:0.26, type:'frontier',  color:'#0891B2', eff:'moderate', source:'Google Cloud Aug 2025' },
+  'gpt4':         { name:'GPT-4 Turbo',      co:'OpenAI',     params:'~1.8T (MoE est.)',   wh:2.9,   water_ml:1.22, type:'frontier',  color:'#1D4ED8', eff:'high',     source:'Epoch AI / Devera' },
+  'llama-405b':   { name:'Llama 3.1 405B',  co:'Meta',       params:'405B',               wh:1.86,  water_ml:0.79, type:'frontier',  color:'#0366D6', eff:'high',     source:'arXiv 2505.09598' },
+  'gemini-flash': { name:'Gemini Flash',     co:'Google',     params:'Undisclosed (MoE)',  wh:0.24,  water_ml:0.26, type:'efficient', color:'#15803D', eff:'low',      source:'Google Cloud Aug 2025' },
+  'gpt4o-mini':   { name:'GPT-4o mini',      co:'OpenAI',     params:'~8B est.',           wh:0.05,  water_ml:0.02, type:'efficient', color:'#15803D', eff:'low',      source:'arXiv 2505.09598' },
+  'claude-sonnet':{ name:'Claude 3.5 Sonnet',co:'Anthropic',  params:'Undisclosed',        wh:0.20,  water_ml:0.08, type:'efficient', color:'#15803D', eff:'low',      source:'arXiv 2505.09598' },
+  'claude-haiku': { name:'Claude Haiku',     co:'Anthropic',  params:'Undisclosed',        wh:0.04,  water_ml:0.02, type:'efficient', color:'#15803D', eff:'vlow',     source:'Estimated from Sonnet ratio' },
+  'llama-8b':     { name:'Llama 3.1 8B',    co:'Meta',       params:'8B',                 wh:0.032, water_ml:0.01, type:'efficient', color:'#15803D', eff:'vlow',     source:'MIT Tech Review 2025' },
+  'mistral':      { name:'Mistral Large',    co:'Mistral',    params:'123B',               wh:0.08,  water_ml:0.03, type:'efficient', color:'#15803D', eff:'low',      source:'arXiv 2505.09598' },
+  'google-search':{ name:'Google Search',    co:'Google',     params:'N/A',                wh:0.0003,water_ml:0.001,type:'baseline',  color:'#64748B', eff:'baseline', source:'Google / IEA baseline' },
+  'image-gen':    { name:'Image Gen (avg)',  co:'Various',    params:'Various',            wh:1.5,   water_ml:0.63, type:'baseline',  color:'#64748B', eff:'high',     source:'MIT Tech Review 2025' },
+  'video-gen':    { name:'Video Gen (short)',co:'Various',    params:'Various',            wh:30.0,  water_ml:12.6, type:'baseline',  color:'#DC2626', eff:'critical', source:'arXiv estimates' },
+};
+
+const LOCATIONS = [
+  { id:'canada-w', name:'Canada West', flag:'🇨🇦', gco2:9,   color:'#15803D', label:'Clean' },
+  { id:'france',   name:'France',      flag:'🇫🇷', gco2:45,  color:'#15803D', label:'Clean' },
+  { id:'uk',       name:'UK',          flag:'🇬🇧', gco2:148, color:'#D97706', label:'Moderate' },
+  { id:'us-west',  name:'US Pacific NW',flag:'🇺🇸',gco2:110, color:'#15803D', label:'Clean' },
+  { id:'us-va',    name:'US Virginia', flag:'🇺🇸', gco2:320, color:'#D97706', label:'High' },
+  { id:'germany',  name:'Germany',     flag:'🇩🇪', gco2:350, color:'#D97706', label:'High' },
+  { id:'india',    name:'India',       flag:'🇮🇳', gco2:630, color:'#DC2626', label:'Critical' },
+  { id:'china',    name:'China',       flag:'🇨🇳', gco2:520, color:'#DC2626', label:'Critical' },
+];
+
+const SLIDER_MAP = [1, 5, 10, 50, 100, 500, 1000, 5000];
+
+let selectedLoc = 'us-va';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+function init() {
+  buildLocationGrid();
+  buildDisclosureGrid();
+  buildProjectionSection();
+  buildRecoGrid();
+  update();
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function syncSlider(el) {
+  const idx = parseInt(el.value) - 1;
+  document.getElementById('queries-input').value = SLIDER_MAP[idx];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOCATION GRID
+// ═══════════════════════════════════════════════════════════════════════════
+function buildLocationGrid() {
+  const wrap = document.getElementById('location-grid');
+  const maxI = Math.max(...LOCATIONS.map(l => l.gco2));
+  wrap.innerHTML = LOCATIONS.map(loc => {
+    const pct = (loc.gco2 / maxI * 100).toFixed(0);
+    const active = loc.id === selectedLoc ? 'active' : '';
+    return `<button class="loc-btn ${active}" onclick="selectLoc('${loc.id}')">
+      <span class="loc-name">${loc.flag} ${loc.name}</span>
+      <span class="loc-intensity" style="color:${active?'rgba(255,255,255,0.7)':loc.color}">${loc.gco2} gCO₂/kWh</span>
+      <div class="loc-bar" style="width:${pct}%;background:${active?'rgba(255,255,255,0.3)':loc.color}"></div>
+    </button>`;
+  }).join('');
+}
+
+function selectLoc(id) {
+  selectedLoc = id;
+  buildLocationGrid();
+  update();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN UPDATE
+// ═══════════════════════════════════════════════════════════════════════════
+function update() {
+  const modelKey  = document.getElementById('model-select').value;
+  const model     = MODELS[modelKey];
+  const queriesM  = parseFloat(document.getElementById('queries-input').value) || 100;
+  const complexity= parseFloat(document.getElementById('query-type').value);
+  const elecCost  = parseFloat(document.getElementById('elec-cost').value) || 0.08;
+  const loc       = LOCATIONS.find(l => l.id === selectedLoc);
+
+  const wh_per_query = model.wh * complexity;
+  const ml_per_query = model.water_ml * complexity;
+  const queries_day  = queriesM * 1e6;
+  const queries_year = queries_day * 365;
+
+  // Per query
+  const energy_wh   = wh_per_query;
+  const water_ml    = ml_per_query;
+  const carbon_g    = (wh_per_query / 1000) * loc.gco2;
+
+  // Annual
+  const annual_gwh  = (queries_year * wh_per_query) / 1e9;
+  const annual_co2t = (annual_gwh * loc.gco2 * 1000) / 1e6;  // kt
+  const annual_wl   = (queries_year * ml_per_query) / 1e6;    // M litres
+  const annual_cost = (annual_gwh * 1e6) * elecCost;           // $
+  const homes       = (annual_gwh * 1e6) / 10500;
+
+  // vs Google Search
+  const vs_search = wh_per_query / 0.0003;
+
+  updateModelBadge(model);
+  updateMetrics(energy_wh, water_ml, carbon_g, annual_gwh, annual_co2t, annual_wl, annual_cost, homes, vs_search, queriesM, model);
+  updateScaleTab(annual_gwh, annual_co2t, annual_wl, annual_cost, homes, queries_year, queriesM);
+  updateLocationTab(model, queriesM, complexity, elecCost);
+  updateModelTable(queriesM, complexity, loc, elecCost, modelKey);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MODEL BADGE
+// ═══════════════════════════════════════════════════════════════════════════
+function updateModelBadge(m) {
+  const effMap = {
+    vlow:'✅ Most Efficient', low:'✅ Efficient', moderate:'⚡ Moderate',
+    high:'⚠️ High Energy', critical:'🔴 Critical'
+  };
+  const bgMap = {
+    vlow:'var(--green-bg)', low:'var(--green-bg)', moderate:'var(--blue-bg)',
+    high:'var(--amber-bg)', critical:'var(--red-bg)'
+  };
+  const tagBg = { vlow:'#D1FAE5', low:'#D1FAE5', moderate:'#DBEAFE', high:'#FEF3C7', critical:'#FEE2E2' };
+  const tagColor= { vlow:'#065F46', low:'#065F46', moderate:'#1D4ED8', high:'#92400E', critical:'#991B1B' };
+  const b = document.getElementById('model-badge');
+  b.style.background = bgMap[m.eff] || 'var(--blue-bg)';
+  b.style.borderColor = 'transparent';
+  b.innerHTML = `
+    <div class="dot" style="background:${m.color}"></div>
+    <div class="model-info">
+      <div class="model-name">${m.name}</div>
+      <div class="model-meta">${m.co} · ${m.params}</div>
+    </div>
+    <span class="efficiency-tag" style="background:${tagBg[m.eff]};color:${tagColor[m.eff]}">${effMap[m.eff]||m.eff}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// METRICS GRID
+// ═══════════════════════════════════════════════════════════════════════════
+function updateMetrics(energy_wh, water_ml, carbon_g, annual_gwh, annual_co2t, annual_wl, annual_cost, homes, vs_search, queriesM, model) {
+  const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : n >= 100 ? Math.round(n) : n >= 1 ? n.toFixed(1) : n >= 0.01 ? n.toFixed(3) : n.toExponential(2);
+  const fmtB = n => n >= 1e9 ? '$'+(n/1e9).toFixed(1)+'B' : n >= 1e6 ? '$'+(n/1e6).toFixed(1)+'M' : n >= 1000 ? '$'+Math.round(n/1000)+'K' : '$'+Math.round(n);
+
+  const metrics = [
+    {
+      cls:'energy', icon:'⚡', label:'Per Query — Energy',
+      val: energy_wh < 0.01 ? (energy_wh*1000).toFixed(3)+' mWh' : energy_wh < 1 ? energy_wh.toFixed(4)+' Wh' : energy_wh.toFixed(2)+' Wh',
+      unit:'watt-hours per query',
+      ctx: `${vs_search >= 1000 ? Math.round(vs_search/1000)+'k×' : Math.round(vs_search)+'×'} more than a Google Search (0.0003 Wh)`
+    },
+    {
+      cls:'carbon', icon:'🌍', label:'Per Query — Carbon',
+      val: carbon_g < 0.001 ? (carbon_g*1000).toFixed(3)+' mg' : carbon_g < 1 ? carbon_g.toFixed(4)+' g' : carbon_g.toFixed(2)+' g',
+      unit:'grams CO₂e per query',
+      ctx: `Based on ${LOCATIONS.find(l=>l.id===selectedLoc).gco2} gCO₂/kWh grid intensity`
+    },
+    {
+      cls:'water', icon:'💧', label:'Per Query — Water',
+      val: water_ml < 0.01 ? (water_ml*1000).toFixed(2)+' μL' : water_ml < 1 ? water_ml.toFixed(3)+' mL' : water_ml.toFixed(2)+' mL',
+      unit:'millilitres per query',
+      ctx: water_ml > 100 ? '🚨 More than a glass of water' : water_ml > 1 ? 'About '+Math.round(water_ml/0.05)+' drops of water' : 'Approx. '+Math.round(water_ml/0.05)+' drops'
+    },
+    {
+      cls:'annual', icon:'📅', label:'Annual Energy',
+      val: annual_gwh >= 1000 ? (annual_gwh/1000).toFixed(1)+' TWh' : annual_gwh >= 1 ? annual_gwh.toFixed(1)+' GWh' : (annual_gwh*1000).toFixed(1)+' MWh',
+      unit:'at '+queriesM+'M queries/day',
+      ctx: `= ${fmt(homes)} US homes powered for one year`
+    },
+    {
+      cls:'carbon', icon:'🏭', label:'Annual CO₂e',
+      val: annual_co2t >= 1000 ? (annual_co2t/1000).toFixed(1)+' Mt' : annual_co2t >= 1 ? annual_co2t.toFixed(1)+' kt' : (annual_co2t*1000).toFixed(0)+' t',
+      unit:'tonnes CO₂e per year',
+      ctx: annual_co2t > 1 ? `≈ ${fmt(annual_co2t*1000/4.6)} cars off the road` : 'Low-carbon operation'
+    },
+    {
+      cls:'cost', icon:'💰', label:'Annual Energy Cost',
+      val: fmtB(annual_cost),
+      unit:'electricity cost per year',
+      ctx: `At $${document.getElementById('elec-cost').value}/kWh commercial rate`
+    },
+  ];
+
+  document.getElementById('metrics-grid').innerHTML = metrics.map(m => `
+    <div class="metric-card ${m.cls}">
+      <div class="metric-icon">${m.icon}</div>
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-value">${m.val}</div>
+      <div class="metric-unit">${m.unit}</div>
+      <div class="metric-context">${m.ctx}</div>
+    </div>`).join('');
+
+  // Insight box
+  let insightHtml = '';
+  if (model.eff === 'critical') {
+    insightHtml = `<div class="insight-box"><div class="insight-icon">⚠️</div><div class="insight-text">
+      <h4>High-Energy Reasoning Model Detected</h4>
+      <p>Reasoning models like ${model.name} generate long internal chain-of-thought sequences before responding, multiplying energy per query by 10–100×. 
+      <strong>For most queries, a standard model would deliver comparable results at a fraction of the energy.</strong> 
+      Use reasoning models only when deep analysis is genuinely required.</p></div></div>`;
+  } else if (model.eff === 'vlow' || model.eff === 'low') {
+    insightHtml = `<div class="insight-box"><div class="insight-icon">✅</div><div class="insight-text">
+      <h4>Efficient Model Selection</h4>
+      <p><strong>${model.name} is one of the most energy-efficient models available</strong> for its capability tier. 
+      At ${queriesM}M daily queries, this choice avoids approximately ${((MODELS['gpt4o'].wh - model.wh) * queriesM * 1e6 * 365 / 1e9).toFixed(1)} GWh/year compared to GPT-4o — 
+      the equivalent of removing ${Math.round((MODELS['gpt4o'].wh - model.wh) * queriesM * 1e6 * 365 * LOCATIONS.find(l=>l.id===selectedLoc).gco2 / 1e9 * 1000 / 4.6)} cars from the road.</p>
+      </div></div>`;
+  } else {
+    const saving_to_efficient = Math.max(0, (model.wh - MODELS['gpt4o-mini'].wh) * queriesM * 1e6 * 365 / 1e9);
+    if (saving_to_efficient > 0.01) {
+      insightHtml = `<div class="insight-box"><div class="insight-icon">💡</div><div class="insight-text">
+        <h4>Optimisation Opportunity</h4>
+        <p>Switching from <strong>${model.name}</strong> to an efficient alternative (GPT-4o mini or Claude Haiku) for routine queries could save approximately 
+        <strong>${saving_to_efficient.toFixed(1)} GWh/year</strong> at this query volume — without meaningful quality degradation for most use cases.</p>
+        </div></div>`;
+    }
+  }
+  document.getElementById('insight-box-wrap').innerHTML = insightHtml;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SCALE TAB
+// ═══════════════════════════════════════════════════════════════════════════
+function updateScaleTab(annual_gwh, annual_co2t, annual_wl, annual_cost, homes, queries_year, queriesM) {
+  const scaleItems = [
+    { emoji:'🏠', num: fmt(homes, 0), label:'US homes powered\nfor one year' },
+    { emoji:'🚗', num: fmt(annual_co2t*1000/4.6, 0), label:'Cars removed from\nthe road equivalent' },
+    { emoji:'🚿', num: fmt(annual_wl*1000/0.065, 0), label:'Showers avoided\n(65L per shower)' },
+    { emoji:'✈️', num: fmt(annual_co2t*1000/1000/0.255, 0), label:'Transatlantic flights\nequivalent (CO₂e)' },
+    { emoji:'🏭', num: fmt(annual_gwh, 1), label:'GWh electricity\nper year' },
+    { emoji:'💧', num: fmt(annual_wl, 1), label:'Million litres\nwater per year' },
+    { emoji:'📊', num: (queries_year/1e9).toFixed(1)+'B', label:'Total queries\nper year' },
+    { emoji:'💰', num: fmtMoney(annual_cost), label:'Annual electricity\ncost' },
+  ];
+
+  document.getElementById('scale-grid').innerHTML = scaleItems.map(s => `
+    <div class="scale-card">
+      <div class="scale-emoji">${s.emoji}</div>
+      <div class="scale-num">${s.num}</div>
+      <div class="scale-label">${s.label.replace('\n','<br>')}</div>
+    </div>`).join('');
+
+  // Comparison bars
+  const refs = [
+    { label:'Your AI Service (annual)', val: annual_gwh, color:'var(--blue)' },
+    { label:'All GenAI inference 2025', val: 15000, color:'var(--red)' },
+    { label:'GPT-4o alone (est. 2025)', val: 420, color:'#7C3AED' },
+    { label:'US Netflix streaming/yr', val: 700, color:'var(--slate)' },
+    { label:'City of Seattle electricity', val: 18000, color:'var(--muted)' },
+  ];
+  const maxVal = Math.max(...refs.map(r=>r.val));
+  document.getElementById('comparison-bars').innerHTML = refs.map(r => {
+    const pct = Math.min(100, (r.val / maxVal * 100)).toFixed(1);
+    const valStr = r.val >= 1000 ? (r.val/1000).toFixed(1)+' TWh' : r.val.toFixed(1)+' GWh';
+    return `<div class="comparison-bar-wrap">
+      <div class="comparison-bar-label">
+        <span class="clabel">${r.label}</span>
+        <span class="cval">${valStr}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${r.color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOCATION ARBITRAGE TAB
+// ═══════════════════════════════════════════════════════════════════════════
+function updateLocationTab(model, queriesM, complexity, elecCost) {
+  const wh = model.wh * complexity;
+  const queries_year = queriesM * 1e6 * 365;
+  const annual_gwh = queries_year * wh / 1e9;
+  const worst = LOCATIONS.find(l=>l.id==='india');
+  const worstCO2 = annual_gwh * worst.gco2 * 1000 / 1e6;
+
+  const locItems = LOCATIONS.map(loc => {
+    const co2 = annual_gwh * loc.gco2 * 1000 / 1e6; // kt
+    const saving = worstCO2 - co2;
+    const savingPct = (saving/worstCO2*100).toFixed(0);
+    const cars = Math.round(saving*1000/4.6);
+    let bg = '#F0FDF4', clr = '#15803D';
+    if (loc.gco2 > 400) { bg='#FEF2F2'; clr='#DC2626'; }
+    else if (loc.gco2 > 200) { bg='#FFFBEB'; clr='#D97706'; }
+    return `<div class="loc-impact-card" style="background:${bg};border-color:${clr}22">
+      <div class="li-region" style="color:${clr}">${loc.flag} ${loc.name}</div>
+      <div class="li-intensity">${loc.gco2} gCO₂/kWh · ${loc.label}</div>
+      <div class="li-saving" style="color:${clr}">${co2 >= 1 ? co2.toFixed(1)+' kt' : (co2*1000).toFixed(0)+' t'} CO₂e/yr</div>
+      <div class="li-desc">${saving > 0 ? '💚 Saves '+savingPct+'% vs India ('+fmt(cars,0)+' cars)' : '🔴 Worst case baseline'}</div>
+    </div>`;
+  });
+
+  document.getElementById('location-impact-grid').innerHTML = locItems.join('');
+
+  const bestLoc = LOCATIONS.reduce((a,b) => a.gco2 < b.gco2 ? a : b);
+  const bestCO2 = annual_gwh * bestLoc.gco2 * 1000 / 1e6;
+  const maxSaving = worstCO2 - bestCO2;
+
+  document.getElementById('location-insight').innerHTML = `
+    <div class="insight-box" style="margin-top:16px">
+      <div class="insight-icon">🗺️</div>
+      <div class="insight-text">
+        <h4>Maximum Location Arbitrage for ${model.name}</h4>
+        <p>Running <strong>${queriesM}M daily queries</strong> of ${model.name} in ${bestLoc.flag} ${bestLoc.name} (${bestLoc.gco2} gCO₂/kWh) vs India (630 gCO₂/kWh) saves 
+        <strong>${maxSaving >= 1 ? maxSaving.toFixed(1)+' kt CO₂e' : (maxSaving*1000).toFixed(0)+' tonnes CO₂e'} per year</strong> — 
+        equivalent to removing <strong>${fmt(Math.round(maxSaving*1000/4.6),0)} cars</strong> from the road. No new technology required — just workload routing.</p>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MODEL COMPARISON TABLE
+// ═══════════════════════════════════════════════════════════════════════════
+function updateModelTable(queriesM, complexity, loc, elecCost, currentKey) {
+  const queries_year = queriesM * 1e6 * 365;
+  const maxWh = Math.max(...Object.values(MODELS).map(m => m.wh));
+
+  const rows = Object.entries(MODELS).map(([key, m]) => {
+    const wh = m.wh * complexity;
+    const annual_gwh = queries_year * wh / 1e9;
+    const co2_kt = annual_gwh * loc.gco2 * 1000 / 1e6;
+    const cost = annual_gwh * 1e6 * elecCost;
+    const pct = (m.wh / maxWh * 100).toFixed(1);
+    const isHighlighted = key === currentKey;
+
+    const effColor = { vlow:'#15803D', low:'#15803D', moderate:'#1D4ED8', high:'#D97706', critical:'#DC2626', baseline:'#64748B' };
+    const effBg    = { vlow:'#D1FAE5', low:'#D1FAE5', moderate:'#DBEAFE', high:'#FEF3C7', critical:'#FEE2E2', baseline:'#F1F5F9' };
+
+    const wh_str = wh < 0.001 ? (wh*1000).toFixed(3)+'mWh' : wh < 1 ? wh.toFixed(4)+'Wh' : wh.toFixed(2)+'Wh';
+    const co2_str = co2_kt >= 1 ? co2_kt.toFixed(1)+' kt' : (co2_kt*1000).toFixed(0)+' t';
+    const cost_str = cost >= 1e9 ? '$'+(cost/1e9).toFixed(1)+'B' : cost >= 1e6 ? '$'+(cost/1e6).toFixed(1)+'M' : '$'+Math.round(cost/1000)+'K';
+    const gwh_str = annual_gwh >= 1000 ? (annual_gwh/1000).toFixed(1)+' TWh' : annual_gwh >= 1 ? annual_gwh.toFixed(1)+' GWh' : (annual_gwh*1000).toFixed(0)+' MWh';
+
+    return `<tr class="${isHighlighted?'highlighted':''}">
+      <td><strong>${isHighlighted?'▶ ':''}</strong><strong style="color:${m.color}">${m.name}</strong><br><span style="font-size:10px;color:var(--muted)">${m.co} · ${m.params}</span></td>
+      <td>
+        <div class="eff-bar">
+          <div class="eff-bar-track"><div class="eff-bar-fill" style="width:${pct}%;background:${m.color}"></div></div>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--slate);white-space:nowrap">${wh_str}</span>
+        </div>
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${gwh_str}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${co2_str}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${cost_str}</td>
+      <td><span class="badge" style="background:${effBg[m.eff]};color:${effColor[m.eff]}">${m.eff}</span></td>
+    </tr>`;
+  });
+
+  document.getElementById('model-table').innerHTML = `
+    <thead><tr>
+      <th>Model</th>
+      <th>Energy/Query</th>
+      <th>Annual Energy</th>
+      <th>Annual CO₂e</th>
+      <th>Annual Cost</th>
+      <th>Efficiency</th>
+    </tr></thead>
+    <tbody>${rows.join('')}</tbody>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DISCLOSURE TRACKER
+// ═══════════════════════════════════════════════════════════════════════════
+function buildDisclosureGrid() {
+  const companies = [
+    {
+      name:'Google / DeepMind', color:'#4285F4',
+      items:[
+        ['Training energy', 'yes', 'Gemini training disclosed'],
+        ['Inference energy/query', 'yes', '0.24 Wh Gemini (Aug 2025)'],
+        ['Water/query', 'yes', '0.26 mL Gemini (Aug 2025)'],
+        ['Scope 3 emissions', 'partial', 'Growing disclosure'],
+        ['24/7 CFE progress', 'yes', '66% in 2024 (reported)'],
+        ['PUE disclosed', 'yes', '1.09 fleet average'],
+      ]
+    },
+    {
+      name:'OpenAI', color:'#1D4ED8',
+      items:[
+        ['Training energy', 'no', 'GPT-4 undisclosed'],
+        ['Inference energy/query', 'partial', '~0.34 Wh per Altman blog'],
+        ['Water/query', 'partial', '~1/15 tsp per Altman blog'],
+        ['Scope 3 emissions', 'no', 'Not published'],
+        ['24/7 CFE progress', 'no', 'Not reported'],
+        ['PUE disclosed', 'no', 'Not published'],
+      ]
+    },
+    {
+      name:'Microsoft / Azure', color:'#00A4EF',
+      items:[
+        ['Training energy', 'no', 'Underlying OpenAI models'],
+        ['Inference energy/query', 'no', 'Not disclosed'],
+        ['Water/query', 'no', 'Not disclosed'],
+        ['Scope 3 emissions', 'yes', 'Full annual report'],
+        ['24/7 CFE progress', 'partial', 'Not yet at 24/7 standard'],
+        ['PUE disclosed', 'yes', '1.11 fleet average'],
+      ]
+    },
+    {
+      name:'Anthropic', color:'#7C3AED',
+      items:[
+        ['Training energy', 'no', 'No models disclosed'],
+        ['Inference energy/query', 'partial', 'Third-party estimates only'],
+        ['Water/query', 'no', 'Not disclosed'],
+        ['Scope 3 emissions', 'no', 'Not published'],
+        ['24/7 CFE progress', 'no', 'Not reported'],
+        ['PUE disclosed', 'no', 'AWS infrastructure'],
+      ]
+    },
+  ];
+
+  document.getElementById('disclosure-grid').innerHTML = companies.map(co => `
+    <div class="disclosure-card" style="border-top:3px solid ${co.color}">
+      <div class="dc-company" style="color:${co.color}">${co.name}</div>
+      ${co.items.map(([label, status, note]) => `
+        <div class="dc-row">
+          <span class="dc-label">${label}</span>
+          <span class="dc-status dc-${status}" title="${note}">${status==='yes'?'✓ Yes':status==='partial'?'~ Partial':'✗ No'}</span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROJECTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+function buildProjectionSection() {
+  const projData = [
+    { year:'2024', ai_twh:15,    inference_pct:85, source:'LBNL 2024' },
+    { year:'2025', ai_twh:15,    inference_pct:87, source:'Schneider Electric' },
+    { year:'2026', ai_twh:45,    inference_pct:88, source:'IEA Base Case' },
+    { year:'2028', ai_twh:120,   inference_pct:89, source:'LBNL projection' },
+    { year:'2030', ai_twh:347,   inference_pct:90, source:'Schneider Electric' },
+  ];
+
+  document.getElementById('projection-cards').innerHTML = [
+    { val:'15 TWh', label:'GenAI inference\nenergy 2025', src:'Schneider Electric', color:'var(--blue)' },
+    { val:'347 TWh', label:'GenAI inference\nenergy 2030', src:'Schneider Electric', color:'var(--red)' },
+    { val:'23×', label:'Growth factor\n2025 → 2030', src:'Based on projections', color:'var(--amber)' },
+    { val:'90%', label:'AI compute from\ninference by 2030', src:'IEA / MIT Tech Review', color:'var(--green)' },
+  ].map(c => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;border-top:3px solid ${c.color}">
+      <div style="font-family:'DM Serif Display',serif;font-size:32px;color:var(--text)">${c.val}</div>
+      <div style="font-size:12px;font-weight:600;color:var(--slate);margin-top:6px">${c.label.replace('\n','<br>')}</div>
+      <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:6px">${c.src}</div>
+    </div>`).join('');
+
+  const maxVal = 347;
+  document.getElementById('projection-bars').innerHTML = projData.map(d => {
+    const pct = (d.ai_twh / maxVal * 100).toFixed(1);
+    const infPct = (d.ai_twh * d.inference_pct / 100 / maxVal * 100).toFixed(1);
+    return `<div class="comparison-bar-wrap">
+      <div class="comparison-bar-label">
+        <span class="clabel"><strong>${d.year}</strong> — ${d.source}</span>
+        <span class="cval">${d.ai_twh} TWh total · ${d.inference_pct}% inference</span>
+      </div>
+      <div class="bar-track" style="height:14px">
+        <div style="height:100%;width:${pct}%;background:var(--border);border-radius:4px;position:relative">
+          <div style="position:absolute;left:0;top:0;height:100%;width:${(infPct/pct*100).toFixed(1)}%;background:var(--red);border-radius:4px 0 0 4px"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RECOMMENDATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+function buildRecoGrid() {
+  const recos = [
+    { n:'01', title:'Match Model to Task', desc:'Use efficient models (GPT-4o mini, Claude Haiku, Gemini Flash) for routine queries. Reserve reasoning models (o3, R1) for complex tasks only. This single change can reduce inference energy by 50–90%.', impact:'⚡ 50–90% energy reduction', color:'var(--green)' },
+    { n:'02', title:'Route to Cleaner Grids', desc:'AI training and batch inference can be routed to hydro/nuclear regions (Canada, France, Sweden). A 70× carbon intensity difference exists between cleanest and dirtiest DC markets globally.', impact:'🌍 Up to 70× carbon reduction', color:'var(--blue)' },
+    { n:'03', title:'Demand Energy Disclosure', desc:'68% of frontier AI models publish zero energy data. Press AI providers to publish per-query energy benchmarks as part of model releases. EU AI Act should require this.', impact:'📊 Enables informed model selection', color:'var(--cyan)' },
+    { n:'04', title:'Mandate 24/7 CFE', desc:'Annual renewable certificates allow companies to claim "100% renewable" while running on coal at night. Require hourly carbon-free energy matching (24/7 CFE) as the regulatory standard.', impact:'🔋 Exposes 20–40%pt hidden gap', color:'var(--amber)' },
+    { n:'05', title:'Optimise Prompt Length', desc:'Shorter, more focused prompts use less compute. Avoiding unnecessary context, setting output length limits, and starting fresh conversations for new topics can reduce per-interaction energy by 20–40%.', impact:'✍️ 20–40% per-query reduction', color:'var(--slate)' },
+    { n:'06', title:'Question Necessity', desc:'Before using AI, ask: is this the right tool? AI is powerful, but a Google Search uses 1,400× less energy per query. Using AI judiciously matters more than optimising model choice.', impact:'🎯 Highest personal impact', color:'var(--navy)' },
+  ];
+
+  document.getElementById('reco-grid').innerHTML = recos.map(r => `
+    <div class="reco-card" style="border-top-color:${r.color}">
+      <div class="reco-number">REC ${r.n}</div>
+      <div class="reco-title">${r.title}</div>
+      <div class="reco-desc">${r.desc}</div>
+      <div class="reco-impact" style="color:${r.color}">${r.impact}</div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════
+function fmt(n, decimals) {
+  if (n === undefined || isNaN(n)) return '—';
+  if (decimals !== undefined) return n >= 1e9 ? (n/1e9).toFixed(decimals)+'B' : n >= 1e6 ? (n/1e6).toFixed(decimals)+'M' : n >= 1000 ? (n/1000).toFixed(decimals)+'K' : n.toFixed(decimals);
+  return n >= 1e9 ? (n/1e9).toFixed(1)+'B' : n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1000 ? (n/1000).toFixed(0)+'K' : Math.round(n).toString();
+}
+
+function fmtMoney(n) {
+  return n >= 1e9 ? '$'+(n/1e9).toFixed(1)+'B' : n >= 1e6 ? '$'+(n/1e6).toFixed(1)+'M' : n >= 1000 ? '$'+(n/1000).toFixed(0)+'K' : '$'+Math.round(n);
+}
+
+// Start
+init();
+</script>
+</body>
+</html>
